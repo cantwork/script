@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div class="log"></div>
+    <div class="wrap" style="transform: scale(0.8);">
+      <img
+        src="https://fayuan.oss/fayuan/file/7x/Jq/q7/b174427c-3868-468f-83cf-ddc6558b8804.png"
+        alt=""
+      />
+    </div>
+
+    <script>
+      /** 缩放的比例 */
+      let scale = 1;
+      /** 平移的距离 */
+      const translateData = { x: 0, y: 0 };
+
+      const useZoom = (el, callback = () => {}) => {
+        el.style.transformOrigin = "0 0";
+        const { width, height } = el.getBoundingClientRect();
+
+        /** 重置数据, 并触发回调更新元素 */
+        const reset = () => {
+          scale = 1;
+          translateData = { x: 0, y: 0 };
+          callback(translateData, scale);
+        };
+
+        const wheelZoom = (event) => {
+          let _scale = scale;
+          _scale += event.deltaY > 0 ? -0.09 : 0.1;
+          if (_scale < 0.3) return;
+          let _translateData = distanceMovedZoom(event, scale, _scale);
+          scale = _scale;
+
+          // 需要移动的距离 = 已经移动的距离 + 需要再次移动的距离
+          translateData.x += _translateData.x;
+          translateData.y += _translateData.y;
+
+          callback(translateData, scale);
+        };
+
+        /** 计算每次需要移动的距离 */
+        const distanceMovedZoom = (
+          { offsetX, offsetY },
+          oldScale,
+          newScale
+        ) => {
+          console.log( width, height )
+          const newWidth = width * newScale;
+          const newHeight = height * newScale;
+          const diffWidth = width * oldScale - newWidth;
+          const diffHeight = height * oldScale - newHeight;
+          // 鼠标在图片上坐标比例, offsetX 是取原始大小的值, 所用要除 widht
+          const xRatio = offsetX / width;
+          const yRatio = offsetY / height;
+
+          // 需要再次移动的距离 x = (新的宽度 - 旧的宽度) * 鼠标在旧的宽度的比例
+          return { x: diffWidth * xRatio, y: diffHeight * yRatio };
+        };
+
+        return {
+          wheelZoom,
+          reset,
+        };
+      };
+
+      const img = document.querySelector("img");
+      const log = document.querySelector(".log");
+
+      img.onload = () => {
+        const { wheelZoom } = useZoom(img, (transform, scale) => {
+          // translate 和 scale 的顺序影响最终效果
+          img.style.transform = `translate(${transform.x}px, ${transform.y}px) scale(${scale})`;
+          log.innerHTML = `x = ${transform.x.toFixed(0)}<br>
+            y = ${transform.y.toFixed(0)}<br>
+            scale = ${scale.toFixed(5)}`;
+        });
+
+        img.addEventListener("wheel", wheelZoom);
+      };
+
+
+      /**
+       * 鼠标拖拽
+       */
+       var isDown = false;
+       var translateX=translateData.x;
+       var translateY=translateData.y;
+       var clickX = 0;
+       var clickY = 0;
+      //按下
+      img.onmousedown = function(e) {
+          e.preventDefault();
+          //获取x坐标和y坐标
+          clickX = e.clientX;
+          clickY = e.clientY;
+          //开关打开
+          isDown = true;
+          //设置样式
+          img.style.cursor = 'move';
+      }
+      //移动
+      window.onmousemove = function(e) {
+          if (isDown == false) return
+          var nx = e.clientX;
+          var ny = e.clientY;
+          //计算位移
+          var moveX = nx-clickX;
+          var moveY = ny-clickY;
+          translateX = translateData.x + moveX;
+          translateY = translateData.y + moveY;
+          img.style.transform = `translate(${translateX + 'px'}, ${translateY + 'px'}) scale(${scale})`
+      }
+      //抬起
+      window.onmouseup = function() {
+          translateData.x = translateX;
+          translateData.y = translateY;
+          //开关关闭
+          isDown = false;
+          img.style.cursor = 'default';
+      }         
+    </script>
+    <style>
+      /* * {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        height: 100vh;
+        background: #000;
+        overflow: hidden;
+      }
+      .wrap {
+        margin: 200px;
+      } */
+      img {
+        touch-action: none;
+        width: 100%;
+        height: 100%;
+      }
+      .log {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 99;  
+        padding: 5px;
+        color: #fff;
+        font-size: 12px;
+        line-height: 18px;
+        pointer-events: none;
+      }
+    </style>
+  </body>
+</html>
